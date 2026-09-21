@@ -76,6 +76,25 @@
   .kpi .num { font-size: 24px; font-weight: 700; line-height: 1.2; }
   .kpi .lbl { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
 
+  .section-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 10px;
+  }
+
+  .stat-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  .stat-group { padding: 14px 16px; }
+  .stat-group h4 { margin: 0 0 10px; font-size: 13px; color: var(--muted); font-weight: 600; }
+  .stat-group .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .stat-group .stat-cell { text-align: center; }
+  .stat-group .stat-cell .v { font-size: 17px; font-weight: 700; }
+  .stat-group .stat-cell .k { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
   .charts {
     display: grid;
     grid-template-columns: 1.3fr 1fr;
@@ -195,6 +214,9 @@
 
   <section class="kpis" id="kpis"></section>
 
+  <h2 class="section-title">Estatísticas descritivas</h2>
+  <section class="stat-groups" id="stat-groups"></section>
+
   <section class="charts">
     <div class="card chart-card">
       <h3>Itens com mais unidades participantes da IRP (top 15)</h3>
@@ -203,6 +225,14 @@
     <div class="card chart-card">
       <h3>Unidades carona que mais aderiram (top 10)</h3>
       <canvas id="chart-top-units"></canvas>
+    </div>
+    <div class="card chart-card">
+      <h3>% do limite de adesão consumido por item (top 15)</h3>
+      <canvas id="chart-consumo"></canvas>
+    </div>
+    <div class="card chart-card">
+      <h3>Distribuição dos itens por status de adesão</h3>
+      <canvas id="chart-status"></canvas>
     </div>
   </section>
 
@@ -260,8 +290,74 @@ async function loadData() {
   DATA = await res.json();
   renderAtaInfo();
   renderKpis();
+  renderStatGroups();
   renderCharts();
   renderTable();
+}
+
+function mean(nums) {
+  return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
+}
+function median(nums) {
+  if (!nums.length) return 0;
+  const s = [...nums].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
+
+function renderStatGroups() {
+  const items = DATA.itens;
+  const round1 = (n) => Math.round(n * 10) / 10;
+
+  const participantesArr = items.map(it => it.qtd_participantes);
+  const caronasArr = items.map(it => it.qtd_caronas);
+  const consumoArr = items
+    .filter(it => it.qtd_maxima_adesao > 0)
+    .map(it => (it.qtd_adesao_autorizada / it.qtd_maxima_adesao) * 100);
+
+  const groups = [
+    {
+      title: "Unidades participantes (IRP) por item",
+      values: [
+        ["Média", round1(mean(participantesArr))],
+        ["Mediana", median(participantesArr)],
+        ["Mínimo", Math.min(...participantesArr)],
+        ["Máximo", Math.max(...participantesArr)],
+      ],
+    },
+    {
+      title: "Unidades carona por item",
+      values: [
+        ["Média", round1(mean(caronasArr))],
+        ["Mediana", median(caronasArr)],
+        ["Mínimo", Math.min(...caronasArr)],
+        ["Máximo", Math.max(...caronasArr)],
+      ],
+    },
+    {
+      title: "% do limite de adesão consumido",
+      values: [
+        ["Média", `${round1(mean(consumoArr))}%`],
+        ["Mediana", `${round1(median(consumoArr))}%`],
+        ["Mínimo", `${round1(Math.min(...consumoArr))}%`],
+        ["Máximo", `${round1(Math.max(...consumoArr))}%`],
+      ],
+    },
+  ];
+
+  document.getElementById("stat-groups").innerHTML = groups.map(g => `
+    <div class="card stat-group">
+      <h4>${g.title}</h4>
+      <div class="stat-row">
+        ${g.values.map(([k, v]) => `
+          <div class="stat-cell">
+            <div class="v">${v}</div>
+            <div class="k">${k}</div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
 }
 
 function renderAtaInfo() {
@@ -352,6 +448,53 @@ function renderCharts() {
       indexAxis: "y",
       plugins: { legend: { display: false } },
       scales: { x: { beginAtZero: true } },
+      maintainAspectRatio: false,
+    },
+  });
+
+  const topConsumo = items
+    .filter(it => it.qtd_maxima_adesao > 0)
+    .map(it => ({ numero: it.numero, pct: (it.qtd_adesao_autorizada / it.qtd_maxima_adesao) * 100 }))
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, 15);
+
+  new Chart(document.getElementById("chart-consumo"), {
+    type: "bar",
+    data: {
+      labels: topConsumo.map(it => `Item ${it.numero}`),
+      datasets: [{
+        label: "% do limite consumido",
+        data: topConsumo.map(it => Math.round(it.pct * 10) / 10),
+        backgroundColor: "#9a6700",
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      indexAxis: "y",
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.x}%` } },
+      },
+      scales: { x: { beginAtZero: true, ticks: { callback: (v) => `${v}%` } } },
+      maintainAspectRatio: false,
+    },
+  });
+
+  const comCarona = items.filter(it => it.tem_carona_registrada).length;
+  const pendenteSemCarona = items.filter(it => it.tem_pedido_pendente && !it.tem_carona_registrada).length;
+  const semAdesao = items.length - comCarona - pendenteSemCarona;
+
+  new Chart(document.getElementById("chart-status"), {
+    type: "doughnut",
+    data: {
+      labels: ["Com carona registrada", "Pendente de análise", "Sem adesão"],
+      datasets: [{
+        data: [comCarona, pendenteSemCarona, semAdesao],
+        backgroundColor: ["#1a7f37", "#9a6700", "#8a94a3"],
+      }],
+    },
+    options: {
+      plugins: { legend: { position: "bottom", labels: { boxWidth: 12 } } },
       maintainAspectRatio: false,
     },
   });
