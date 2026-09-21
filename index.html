@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Relatório de Adesões — Ata de Registro de Preços</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --border: #e3e6ea;
+    --text: #1c2128;
+    --muted: #5b6470;
+    --accent: #2f6feb;
+    --accent-soft: #eaf1fe;
+    --good: #1a7f37;
+    --warn: #9a6700;
+    --shadow: 0 1px 2px rgba(20, 24, 30, 0.06);
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216;
+      --panel: #171b21;
+      --border: #2a2f37;
+      --text: #e6e9ee;
+      --muted: #9aa4b2;
+      --accent: #5b9dff;
+      --accent-soft: #16233d;
+      --good: #56d364;
+      --warn: #e3b341;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 64px; }
+
+  header.top { margin-bottom: 20px; }
+  header.top h1 { font-size: 20px; margin: 0 0 4px; }
+  header.top p { margin: 0; color: var(--muted); }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+
+  .ata-info {
+    padding: 16px 18px;
+    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px 20px;
+  }
+  .ata-info div { min-width: 0; }
+  .ata-info .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 2px; }
+  .ata-info .value { font-weight: 600; overflow-wrap: anywhere; }
+  .ata-info .value.small { font-weight: 500; font-size: 13px; }
+
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .kpi { padding: 14px 16px; }
+  .kpi .num { font-size: 24px; font-weight: 700; line-height: 1.2; }
+  .kpi .lbl { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+
+  .charts {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+  @media (max-width: 820px) { .charts { grid-template-columns: 1fr; } }
+  .chart-card { padding: 14px 16px 8px; }
+  .chart-card h3 { margin: 0 0 10px; font-size: 14px; }
+  .chart-card canvas { max-height: 280px; }
+
+  .report { padding: 16px 18px 20px; }
+  .report h2 { margin: 0 0 4px; font-size: 16px; }
+  .report .sub { color: var(--muted); margin: 0 0 14px; }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .controls input[type="search"] {
+    flex: 1 1 260px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13.5px;
+  }
+  .segmented {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .segmented button {
+    border: none;
+    background: var(--panel);
+    color: var(--text);
+    padding: 8px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    border-right: 1px solid var(--border);
+  }
+  .segmented button:last-child { border-right: none; }
+  .segmented button.active { background: var(--accent); color: #fff; }
+  .btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left;
+    padding: 8px 10px;
+    color: var(--muted);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  thead th:hover { color: var(--text); }
+  tbody td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:hover { background: var(--accent-soft); }
+  td.desc { max-width: 360px; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .badge.good { background: rgba(26,127,55,.12); color: var(--good); }
+  .badge.warn { background: rgba(154,103,0,.14); color: var(--warn); }
+  .badge.muted { background: var(--border); color: var(--muted); }
+
+  .participants-toggle {
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 12.5px;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+  .participants-list {
+    margin: 6px 0 0;
+    padding-left: 16px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .table-scroll { overflow-x: auto; }
+  .empty-state { padding: 30px; text-align: center; color: var(--muted); }
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 24px; }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>Relatório de Adesões — Ata de Registro de Preços</h1>
+    <p>Análise descritiva e estatística dos pedidos de adesão (caronas) por item.</p>
+  </header>
+
+  <section class="card ata-info" id="ata-info"></section>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="charts">
+    <div class="card chart-card">
+      <h3>Unidades participantes por item (top 15)</h3>
+      <canvas id="chart-top-items"></canvas>
+    </div>
+    <div class="card chart-card">
+      <h3>Unidades que mais aderiram (top 10)</h3>
+      <canvas id="chart-top-units"></canvas>
+    </div>
+  </section>
+
+  <section class="card report">
+    <h2>Itens com pedidos de adesão</h2>
+    <p class="sub">Busque por item, código de catálogo ou descrição. Alterne entre participantes já registrados e pedidos aguardando análise.</p>
+
+    <div class="controls">
+      <input type="search" id="search" placeholder="Buscar por item, código ou descrição..." />
+      <div class="segmented" id="filter-segment">
+        <button data-filter="registrados" class="active">Participantes registrados</button>
+        <button data-filter="pendentes">Pedidos pendentes</button>
+        <button data-filter="todos">Todos os itens</button>
+      </div>
+      <button class="btn" id="btn-export-csv">Exportar CSV</button>
+      <button class="btn" id="btn-export-xls">Exportar Excel</button>
+    </div>
+
+    <div class="table-scroll">
+      <table id="report-table">
+        <thead>
+          <tr>
+            <th data-key="numero">Item</th>
+            <th data-key="codigo_catalogo">Código</th>
+            <th data-key="descricao">Descrição</th>
+            <th data-key="qtd_homologada">Qtd. homologada</th>
+            <th data-key="qtd_participantes">Nº participantes</th>
+            <th data-key="qtd_maxima_adesao">Limite adesão</th>
+            <th data-key="qtd_aguardando_analise">Aguardando análise</th>
+            <th data-key="aceita_adesao">Aceita adesão</th>
+          </tr>
+        </thead>
+        <tbody id="report-body"></tbody>
+      </table>
+    </div>
+    <div class="empty-state" id="empty-state" hidden>Nenhum item encontrado para os filtros atuais.</div>
+  </section>
+
+  <footer>
+    Gerado a partir do relatório Contratos.gov.br · dados processados localmente por <code>parse_ata.py</code>
+  </footer>
+</div>
+
+<script>
+let DATA = null;
+let sortState = { key: "qtd_participantes", dir: "desc" };
+let currentFilter = "registrados";
+let currentSearch = "";
+
+const fmt = new Intl.NumberFormat("pt-BR");
+
+async function loadData() {
+  const res = await fetch("data/data.json");
+  DATA = await res.json();
+  renderAtaInfo();
+  renderKpis();
+  renderCharts();
+  renderTable();
+}
+
+function renderAtaInfo() {
+  const a = DATA.ata || {};
+  const fields = [
+    ["Ata nº", a.ata_numero],
+    ["Órgão", a.orgao],
+    ["Unidade gerenciadora", a.unidade_gerenciadora],
+    ["Fornecedor", a.fornecedor_principal],
+    ["Vigência", a.vigencia_inicial && a.vigencia_final ? `${a.vigencia_inicial} a ${a.vigencia_final}` : null],
+    ["Valor contratado", a.valor_contratado],
+  ];
+  const el = document.getElementById("ata-info");
+  el.innerHTML = fields
+    .filter(([, v]) => v)
+    .map(([label, value]) => `
+      <div>
+        <div class="label">${label}</div>
+        <div class="value small">${escapeHtml(String(value))}</div>
+      </div>
+    `).join("");
+}
+
+function renderKpis() {
+  const r = DATA.resumo;
+  const kpis = [
+    [r.total_itens, "Itens na ata"],
+    [r.itens_com_participante_registrado, "Itens com participante registrado"],
+    [r.itens_com_pedido_pendente, "Itens com pedido pendente"],
+    [r.total_participacoes, "Total de participações (caronas)"],
+    [`${Math.round((r.itens_aceita_adesao / r.total_itens) * 100)}%`, "Itens que aceitam adesão"],
+  ];
+  document.getElementById("kpis").innerHTML = kpis.map(([num, lbl]) => `
+    <div class="card kpi">
+      <div class="num">${typeof num === "number" ? fmt.format(num) : num}</div>
+      <div class="lbl">${lbl}</div>
+    </div>
+  `).join("");
+}
+
+function renderCharts() {
+  const items = DATA.itens;
+
+  const topItems = [...items]
+    .sort((a, b) => b.qtd_participantes - a.qtd_participantes)
+    .slice(0, 15);
+
+  new Chart(document.getElementById("chart-top-items"), {
+    type: "bar",
+    data: {
+      labels: topItems.map(it => `Item ${it.numero}`),
+      datasets: [{
+        label: "Nº de unidades participantes",
+        data: topItems.map(it => it.qtd_participantes),
+        backgroundColor: "#2f6feb",
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      indexAxis: "y",
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true } },
+      maintainAspectRatio: false,
+    },
+  });
+
+  const unitCounts = new Map();
+  for (const it of items) {
+    for (const p of it.participantes) {
+      unitCounts.set(p.nome, (unitCounts.get(p.nome) || 0) + 1);
+    }
+  }
+  const topUnits = [...unitCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+  new Chart(document.getElementById("chart-top-units"), {
+    type: "bar",
+    data: {
+      labels: topUnits.map(([name]) => name),
+      datasets: [{
+        label: "Itens aderidos",
+        data: topUnits.map(([, count]) => count),
+        backgroundColor: "#1a7f37",
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      indexAxis: "y",
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true } },
+      maintainAspectRatio: false,
+    },
+  });
+}
+
+function matchesFilter(item) {
+  if (currentFilter === "registrados") return item.tem_participante_registrado;
+  if (currentFilter === "pendentes") return item.tem_pedido_pendente;
+  return true;
+}
+
+function normalize(s) {
+  return String(s || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+}
+
+function matchesSearch(item) {
+  if (!currentSearch) return true;
+  const q = normalize(currentSearch);
+  return (
+    normalize(item.numero).includes(q) ||
+    normalize(item.codigo_catalogo).includes(q) ||
+    normalize(item.descricao).includes(q)
+  );
+}
+
+function getFilteredSorted() {
+  let rows = DATA.itens.filter(it => matchesFilter(it) && matchesSearch(it));
+  const { key, dir } = sortState;
+  rows = [...rows].sort((a, b) => {
+    let va = a[key], vb = b[key];
+    if (typeof va === "string") va = va.toLowerCase();
+    if (typeof vb === "string") vb = vb.toLowerCase();
+    if (va == null) va = "";
+    if (vb == null) vb = "";
+    if (va < vb) return dir === "asc" ? -1 : 1;
+    if (va > vb) return dir === "asc" ? 1 : -1;
+    return 0;
+  });
+  return rows;
+}
+
+function renderTable() {
+  const rows = getFilteredSorted();
+  const body = document.getElementById("report-body");
+  const empty = document.getElementById("empty-state");
+
+  if (rows.length === 0) {
+    body.innerHTML = "";
+    empty.hidden = false;
+    return;
+  }
+  empty.hidden = true;
+
+  body.innerHTML = rows.map(it => {
+    const badge = it.aceita_adesao === "Sim"
+      ? `<span class="badge good">Sim</span>`
+      : `<span class="badge muted">${escapeHtml(it.aceita_adesao || "—")}</span>`;
+    const aguardando = it.qtd_aguardando_analise > 0
+      ? `<span class="badge warn">${fmt.format(it.qtd_aguardando_analise)}</span>`
+      : fmt.format(it.qtd_aguardando_analise || 0);
+
+    const participantsId = `part-${it.numero}`;
+    const participantsList = it.participantes.length
+      ? `<button class="participants-toggle" onclick="document.getElementById('${participantsId}').hidden = !document.getElementById('${participantsId}').hidden">ver unidades</button>
+         <ul class="participants-list" id="${participantsId}" hidden>
+           ${it.participantes.map(p => `<li>${escapeHtml(p.nome)} (${p.codigo})</li>`).join("")}
+         </ul>`
+      : "";
+
+    return `
+      <tr>
+        <td>${escapeHtml(it.numero)}</td>
+        <td>${escapeHtml(it.codigo_catalogo || "—")}</td>
+        <td class="desc">${escapeHtml(truncate(it.descricao, 140))}</td>
+        <td>${fmt.format(it.qtd_homologada || 0)}</td>
+        <td>${fmt.format(it.qtd_participantes)} ${participantsList}</td>
+        <td>${fmt.format(it.qtd_maxima_adesao || 0)}</td>
+        <td>${aguardando}</td>
+        <td>${badge}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function truncate(s, n) {
+  if (!s) return "";
+  return s.length > n ? s.slice(0, n - 1) + "…" : s;
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function toCsvValue(v) {
+  const s = String(v ?? "");
+  if (/[",\n;]/.test(s)) return `"${s.replaceAll('"', '""')}"`;
+  return s;
+}
+
+function exportCsv() {
+  const rows = getFilteredSorted();
+  const headers = ["numero", "codigo_catalogo", "descricao", "qtd_homologada", "qtd_participantes", "qtd_maxima_adesao", "qtd_aguardando_analise", "aceita_adesao"];
+  const lines = [headers.join(";")];
+  for (const it of rows) {
+    lines.push(headers.map(h => toCsvValue(it[h])).join(";"));
+  }
+  downloadBlob(lines.join("\n"), "text/csv;charset=utf-8", "itens_adesao.csv");
+}
+
+function exportXls() {
+  // planilha HTML simples que o Excel abre nativamente (sem dependências externas)
+  const rows = getFilteredSorted();
+  const headers = ["Item", "Código", "Descrição", "Qtd. homologada", "Nº participantes", "Limite adesão", "Aguardando análise", "Aceita adesão"];
+  const keys = ["numero", "codigo_catalogo", "descricao", "qtd_homologada", "qtd_participantes", "qtd_maxima_adesao", "qtd_aguardando_analise", "aceita_adesao"];
+  let html = `<table><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr>`;
+  for (const it of rows) {
+    html += `<tr>${keys.map(k => `<td>${escapeHtml(it[k] ?? "")}</td>`).join("")}</tr>`;
+  }
+  html += "</table>";
+  downloadBlob(html, "application/vnd.ms-excel", "itens_adesao.xls");
+}
+
+function downloadBlob(content, mime, filename) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById("search").addEventListener("input", (e) => {
+  currentSearch = e.target.value.trim();
+  renderTable();
+});
+
+document.getElementById("filter-segment").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-filter]");
+  if (!btn) return;
+  currentFilter = btn.dataset.filter;
+  document.querySelectorAll("#filter-segment button").forEach(b => b.classList.toggle("active", b === btn));
+  renderTable();
+});
+
+document.querySelectorAll("#report-table thead th[data-key]").forEach(th => {
+  th.addEventListener("click", () => {
+    const key = th.dataset.key;
+    if (sortState.key === key) {
+      sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
+    } else {
+      sortState = { key, dir: "desc" };
+    }
+    renderTable();
+  });
+});
+
+document.getElementById("btn-export-csv").addEventListener("click", exportCsv);
+document.getElementById("btn-export-xls").addEventListener("click", exportXls);
+
+loadData().catch(err => {
+  document.querySelector(".wrap").innerHTML = `<p style="color:#c0392b">Erro ao carregar data/data.json: ${err.message}. Rode "python3 parse_ata.py &lt;arquivo&gt;" primeiro, e sirva a pasta com um servidor HTTP (fetch não funciona em file://).</p>`;
+});
+</script>
+</body>
+</html>
