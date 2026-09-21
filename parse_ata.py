@@ -97,6 +97,8 @@ UNIT_LINE_RE = re.compile(r"^(\d+)(.*?)(Participante|Gerenciadora)(\d*)$")
 
 
 def parse_units_block(block_text: str):
+    """Unidades da tabela UNIDADE(S) ITEM: Gerenciadora + Participantes da IRP.
+    Essa tabela não lista caronas (ver parse_empenho_units)."""
     units = []
     for line in block_text.splitlines():
         line = line.strip()
@@ -113,6 +115,26 @@ def parse_units_block(block_text: str):
                 "tipo": tipo,
             })
     return units
+
+
+# Nas tabelas de EMPENHO(S) ITEM, unidade e código aparecem separados por " - "
+# (formato diferente da tabela UNIDADE(S) ITEM). É aqui que aparece o tipo
+# "Não participante", ou seja, unidades carona: não estavam na lista original
+# de participantes da IRP, mas empenharam contra a ata depois de aderir.
+EMPENHO_UNIT_LINE_RE = re.compile(r"^(\d+)\s*-\s*(.+?)(Participante|Não participante|Gerenciadora)\d*$")
+
+
+def parse_carona_units(block_text: str):
+    caronas = {}
+    for line in block_text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        m = EMPENHO_UNIT_LINE_RE.match(line)
+        if m and m.group(3) == "Não participante":
+            codigo, nome, _tipo = m.group(1), m.group(2).strip(), m.group(3)
+            caronas[codigo] = {"codigo": codigo, "nome": nome}
+    return list(caronas.values())
 
 
 def parse_items(text: str):
@@ -158,8 +180,20 @@ def parse_items(text: str):
         )
         unidades = parse_units_block(m.group(1)) if m else []
         item["unidades"] = unidades
+        # "participantes" = unidades da IRP (Intenção de Registro de Preços),
+        # registradas desde a assinatura da ata. NÃO são caronas.
         item["participantes"] = [u for u in unidades if u["tipo"] == "Participante"]
         item["qtd_participantes"] = len(item["participantes"])
+
+        # bloco de empenhos: é onde aparecem as unidades carona ("Não participante")
+        m = re.search(
+            r"EMPENHO\(S\) ITEM.*?\n(.*?)(?:CONTRATO\(S\) ITEM|## DETALHAMENTO|$)",
+            block,
+            re.DOTALL,
+        )
+        empenho_text = m.group(1) if m else ""
+        item["caronas"] = parse_carona_units(empenho_text)
+        item["qtd_caronas"] = len(item["caronas"])
 
         # bloco de adesões
         m = re.search(
@@ -181,10 +215,21 @@ def parse_items(text: str):
         m = re.search(r"Aceita adesão\s*##\s*(Sim|Não)", ades_text)
         item["aceita_adesao"] = m.group(1) if m else None
 
-        item["tem_participante_registrado"] = item["qtd_participantes"] > 0
+        # a quantidade já autorizada consome o limite de adesão: o próprio
+        # relatório já reduz "disponível" conforme autorizações acontecem.
+        maxima, disponivel = item["qtd_maxima_adesao"], item["qtd_disponivel_adesao"]
+        if isinstance(maxima, (int, float)) and isinstance(disponivel, (int, float)):
+            item["qtd_adesao_autorizada"] = maxima - disponivel
+        else:
+            item["qtd_adesao_autorizada"] = None
+
+        item["tem_carona_registrada"] = item["qtd_caronas"] > 0
         aguardando = item["qtd_aguardando_analise"] or 0
         item["tem_pedido_pendente"] = isinstance(aguardando, (int, float)) and aguardando > 0
-        item["teve_pedido_adesao"] = item["tem_participante_registrado"] or item["tem_pedido_pendente"]
+        autorizada = item["qtd_adesao_autorizada"] or 0
+        item["teve_pedido_adesao"] = (
+            item["tem_carona_registrada"] or item["tem_pedido_pendente"] or autorizada > 0
+        )
 
         items.append(item)
 
@@ -210,9 +255,11 @@ def main():
         "resumo": {
             "total_itens": len(items),
             "itens_aceita_adesao": sum(1 for it in items if it.get("aceita_adesao") == "Sim"),
-            "itens_com_participante_registrado": sum(1 for it in items if it["tem_participante_registrado"]),
+            "itens_com_carona_registrada": sum(1 for it in items if it["tem_carona_registrada"]),
             "itens_com_pedido_pendente": sum(1 for it in items if it["tem_pedido_pendente"]),
-            "total_participacoes": sum(it["qtd_participantes"] for it in items),
+            "total_participantes_irp": sum(it["qtd_participantes"] for it in items),
+            "total_caronas": sum(it["qtd_caronas"] for it in items),
+            "total_adesoes_autorizadas": sum(it["qtd_adesao_autorizada"] or 0 for it in items),
         },
     }
 

@@ -197,23 +197,23 @@
 
   <section class="charts">
     <div class="card chart-card">
-      <h3>Unidades participantes por item (top 15)</h3>
+      <h3>Itens com mais unidades participantes da IRP (top 15)</h3>
       <canvas id="chart-top-items"></canvas>
     </div>
     <div class="card chart-card">
-      <h3>Unidades que mais aderiram (top 10)</h3>
+      <h3>Unidades carona que mais aderiram (top 10)</h3>
       <canvas id="chart-top-units"></canvas>
     </div>
   </section>
 
   <section class="card report">
     <h2>Itens com pedidos de adesão</h2>
-    <p class="sub">Busque por item, código de catálogo ou descrição. Alterne entre participantes já registrados e pedidos aguardando análise.</p>
+    <p class="sub">Busque por item, código de catálogo ou descrição. Alterne entre itens com carona registrada e pedidos aguardando análise.</p>
 
     <div class="controls">
       <input type="search" id="search" placeholder="Buscar por item, código ou descrição..." />
       <div class="segmented" id="filter-segment">
-        <button data-filter="registrados" class="active">Participantes registrados</button>
+        <button data-filter="caronas" class="active">Caronas registradas</button>
         <button data-filter="pendentes">Pedidos pendentes</button>
         <button data-filter="todos">Todos os itens</button>
       </div>
@@ -229,10 +229,11 @@
             <th data-key="codigo_catalogo">Código</th>
             <th data-key="descricao">Descrição</th>
             <th data-key="qtd_homologada">Qtd. homologada</th>
-            <th data-key="qtd_participantes">Nº participantes</th>
+            <th data-key="qtd_participantes">Nº participantes (IRP)</th>
             <th data-key="qtd_maxima_adesao">Limite adesão</th>
+            <th data-key="qtd_adesao_autorizada">Adesões autorizadas</th>
             <th data-key="qtd_aguardando_analise">Aguardando análise</th>
-            <th data-key="aceita_adesao">Aceita adesão</th>
+            <th data-key="qtd_caronas">Caronas</th>
           </tr>
         </thead>
         <tbody id="report-body"></tbody>
@@ -249,7 +250,7 @@
 <script>
 let DATA = null;
 let sortState = { key: "qtd_participantes", dir: "desc" };
-let currentFilter = "registrados";
+let currentFilter = "caronas";
 let currentSearch = "";
 
 const fmt = new Intl.NumberFormat("pt-BR");
@@ -288,9 +289,10 @@ function renderKpis() {
   const r = DATA.resumo;
   const kpis = [
     [r.total_itens, "Itens na ata"],
-    [r.itens_com_participante_registrado, "Itens com participante registrado"],
+    [r.itens_com_carona_registrada, "Itens com carona registrada"],
     [r.itens_com_pedido_pendente, "Itens com pedido pendente"],
-    [r.total_participacoes, "Total de participações (caronas)"],
+    [r.total_caronas, "Total de unidades carona"],
+    [r.total_adesoes_autorizadas, "Total de adesões autorizadas"],
     [`${Math.round((r.itens_aceita_adesao / r.total_itens) * 100)}%`, "Itens que aceitam adesão"],
   ];
   document.getElementById("kpis").innerHTML = kpis.map(([num, lbl]) => `
@@ -329,8 +331,8 @@ function renderCharts() {
 
   const unitCounts = new Map();
   for (const it of items) {
-    for (const p of it.participantes) {
-      unitCounts.set(p.nome, (unitCounts.get(p.nome) || 0) + 1);
+    for (const c of it.caronas) {
+      unitCounts.set(c.nome, (unitCounts.get(c.nome) || 0) + 1);
     }
   }
   const topUnits = [...unitCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
@@ -356,7 +358,7 @@ function renderCharts() {
 }
 
 function matchesFilter(item) {
-  if (currentFilter === "registrados") return item.tem_participante_registrado;
+  if (currentFilter === "caronas") return item.tem_carona_registrada;
   if (currentFilter === "pendentes") return item.tem_pedido_pendente;
   return true;
 }
@@ -407,9 +409,6 @@ function renderTable() {
   empty.hidden = true;
 
   body.innerHTML = rows.map(it => {
-    const badge = it.aceita_adesao === "Sim"
-      ? `<span class="badge good">Sim</span>`
-      : `<span class="badge muted">${escapeHtml(it.aceita_adesao || "—")}</span>`;
     const aguardando = it.qtd_aguardando_analise > 0
       ? `<span class="badge warn">${fmt.format(it.qtd_aguardando_analise)}</span>`
       : fmt.format(it.qtd_aguardando_analise || 0);
@@ -422,6 +421,14 @@ function renderTable() {
          </ul>`
       : "";
 
+    const caronasId = `caronas-${it.numero}`;
+    const caronasList = it.caronas.length
+      ? `<button class="participants-toggle" onclick="document.getElementById('${caronasId}').hidden = !document.getElementById('${caronasId}').hidden">ver unidades</button>
+         <ul class="participants-list" id="${caronasId}" hidden>
+           ${it.caronas.map(c => `<li>${escapeHtml(c.nome)} (${c.codigo})</li>`).join("")}
+         </ul>`
+      : "";
+
     return `
       <tr>
         <td>${escapeHtml(it.numero)}</td>
@@ -430,8 +437,9 @@ function renderTable() {
         <td>${fmt.format(it.qtd_homologada || 0)}</td>
         <td>${fmt.format(it.qtd_participantes)} ${participantsList}</td>
         <td>${fmt.format(it.qtd_maxima_adesao || 0)}</td>
+        <td>${fmt.format(it.qtd_adesao_autorizada || 0)}</td>
         <td>${aguardando}</td>
-        <td>${badge}</td>
+        <td>${fmt.format(it.qtd_caronas)} ${caronasList}</td>
       </tr>
     `;
   }).join("");
@@ -458,7 +466,7 @@ function toCsvValue(v) {
 
 function exportCsv() {
   const rows = getFilteredSorted();
-  const headers = ["numero", "codigo_catalogo", "descricao", "qtd_homologada", "qtd_participantes", "qtd_maxima_adesao", "qtd_aguardando_analise", "aceita_adesao"];
+  const headers = ["numero", "codigo_catalogo", "descricao", "qtd_homologada", "qtd_participantes", "qtd_maxima_adesao", "qtd_adesao_autorizada", "qtd_aguardando_analise", "qtd_caronas"];
   const lines = [headers.join(";")];
   for (const it of rows) {
     lines.push(headers.map(h => toCsvValue(it[h])).join(";"));
@@ -469,8 +477,8 @@ function exportCsv() {
 function exportXls() {
   // planilha HTML simples que o Excel abre nativamente (sem dependências externas)
   const rows = getFilteredSorted();
-  const headers = ["Item", "Código", "Descrição", "Qtd. homologada", "Nº participantes", "Limite adesão", "Aguardando análise", "Aceita adesão"];
-  const keys = ["numero", "codigo_catalogo", "descricao", "qtd_homologada", "qtd_participantes", "qtd_maxima_adesao", "qtd_aguardando_analise", "aceita_adesao"];
+  const headers = ["Item", "Código", "Descrição", "Qtd. homologada", "Nº participantes (IRP)", "Limite adesão", "Adesões autorizadas", "Aguardando análise", "Caronas"];
+  const keys = ["numero", "codigo_catalogo", "descricao", "qtd_homologada", "qtd_participantes", "qtd_maxima_adesao", "qtd_adesao_autorizada", "qtd_aguardando_analise", "qtd_caronas"];
   let html = `<table><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr>`;
   for (const it of rows) {
     html += `<tr>${keys.map(k => `<td>${escapeHtml(it[k] ?? "")}</td>`).join("")}</tr>`;
