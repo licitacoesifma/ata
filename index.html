@@ -1,678 +1,563 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Relatório de Adesões — Ata de Registro de Preços</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<style>
-  :root {
-    --bg: #f6f7f9;
-    --panel: #ffffff;
-    --border: #e3e6ea;
-    --text: #1c2128;
-    --muted: #5b6470;
-    --accent: #2f6feb;
-    --accent-soft: #eaf1fe;
-    --good: #1a7f37;
-    --warn: #9a6700;
-    --shadow: 0 1px 2px rgba(20, 24, 30, 0.06);
-    --radius: 10px;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0f1216;
-      --panel: #171b21;
-      --border: #2a2f37;
-      --text: #e6e9ee;
-      --muted: #9aa4b2;
-      --accent: #5b9dff;
-      --accent-soft: #16233d;
-      --good: #56d364;
-      --warn: #e3b341;
-      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-    }
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    font-size: 14px;
-  }
-  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 64px; }
-
-  header.top { margin-bottom: 20px; }
-  header.top h1 { font-size: 20px; margin: 0 0 4px; }
-  header.top p { margin: 0; color: var(--muted); }
-
-  .card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-  }
-
-  .ata-info {
-    padding: 16px 18px;
-    margin-bottom: 20px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px 20px;
-  }
-  .ata-info div { min-width: 0; }
-  .ata-info .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 2px; }
-  .ata-info .value { font-weight: 600; overflow-wrap: anywhere; }
-  .ata-info .value.small { font-weight: 500; font-size: 13px; }
-
-  .kpis {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  .kpi { padding: 14px 16px; }
-  .kpi .num { font-size: 24px; font-weight: 700; line-height: 1.2; }
-  .kpi .lbl { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
-
-  .section-title {
-    font-size: 15px;
-    font-weight: 600;
-    margin: 0 0 10px;
-  }
-
-  .stat-groups {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 12px;
-    margin-bottom: 22px;
-  }
-  .stat-group { padding: 14px 16px; }
-  .stat-group h4 { margin: 0 0 10px; font-size: 13px; color: var(--muted); font-weight: 600; }
-  .stat-group .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .stat-group .stat-cell { text-align: center; }
-  .stat-group .stat-cell .v { font-size: 17px; font-weight: 700; }
-  .stat-group .stat-cell .k { font-size: 11px; color: var(--muted); margin-top: 2px; }
-
-  .charts {
-    display: grid;
-    grid-template-columns: 1.3fr 1fr;
-    gap: 16px;
-    margin-bottom: 22px;
-  }
-  @media (max-width: 820px) { .charts { grid-template-columns: 1fr; } }
-  .chart-card { padding: 14px 16px 8px; }
-  .chart-card h3 { margin: 0 0 10px; font-size: 14px; }
-  .chart-card canvas { max-height: 280px; }
-
-  .report { padding: 16px 18px 20px; }
-  .report h2 { margin: 0 0 4px; font-size: 16px; }
-  .report .sub { color: var(--muted); margin: 0 0 14px; }
-
-  .controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 14px;
-  }
-  .controls input[type="search"] {
-    flex: 1 1 260px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: var(--bg);
-    color: var(--text);
-    font-size: 13.5px;
-  }
-  .segmented {
-    display: flex;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  .segmented button {
-    border: none;
-    background: var(--panel);
-    color: var(--text);
-    padding: 8px 12px;
-    font-size: 13px;
-    cursor: pointer;
-    border-right: 1px solid var(--border);
-  }
-  .segmented button:last-child { border-right: none; }
-  .segmented button.active { background: var(--accent); color: #fff; }
-  .btn {
-    padding: 8px 14px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: var(--panel);
-    color: var(--text);
-    font-size: 13px;
-    cursor: pointer;
-  }
-  .btn:hover { border-color: var(--accent); }
-  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  thead th {
-    text-align: left;
-    padding: 8px 10px;
-    color: var(--muted);
-    font-weight: 600;
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-    cursor: pointer;
-    user-select: none;
-  }
-  thead th:hover { color: var(--text); }
-  tbody td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
-  tbody tr:hover { background: var(--accent-soft); }
-  td.desc { max-width: 360px; }
-  .badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 999px;
-    font-size: 11.5px;
-    font-weight: 600;
-  }
-  .badge.good { background: rgba(26,127,55,.12); color: var(--good); }
-  .badge.warn { background: rgba(154,103,0,.14); color: var(--warn); }
-  .badge.muted { background: var(--border); color: var(--muted); }
-
-  .participants-toggle {
-    color: var(--accent);
-    cursor: pointer;
-    font-size: 12.5px;
-    background: none;
-    border: none;
-    padding: 0;
-  }
-  .participants-list {
-    margin: 6px 0 0;
-    padding-left: 16px;
-    color: var(--muted);
-    font-size: 12px;
-  }
-
-  .table-scroll { overflow-x: auto; }
-  .empty-state { padding: 30px; text-align: center; color: var(--muted); }
-  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 24px; }
-  footer a { color: inherit; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Ata de Registro de Preços - IFMA</title>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Babel for in-browser JSX transpilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body { 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            background-color: #f3f4f6; 
+        }
+        /* Utilitários para esconder a barra de rolagem mas manter a funcionalidade */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
 <body>
-<div class="wrap">
+    <div id="root"></div>
 
-  <header class="top">
-    <h1>Relatório de Adesões — Ata de Registro de Preços</h1>
-    <p>Análise descritiva e estatística dos pedidos de adesão (caronas) por item.</p>
-  </header>
+    <script type="text/babel">
+        // Ícones em SVG
+        const SearchIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
+        const EyeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>;
+        const XIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
+        const FileTextIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>;
+        const BuildingIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></svg>;
+        const BadgeDollarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"></path><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 18V6"></path></svg>;
 
-  <section class="card ata-info" id="ata-info"></section>
+        // Dados Mockados da Ata
+        const ATA_GLOBAL_INFO = {
+            numero: "00001/2026",
+            ug: "158276 - INST.FED.DO MARANHAO/CAMPUS SAO LUIS-MACARANA",
+            atualizacao: "27/02/2026",
+            link: "https://pncp.gov.br/app/atas/107351",
+            contratoBase: "45000194/2025/293/1",
+            vigencia: "02/03/2026 a 02/03/2027",
+            orgao: "INST.FED.DE EDUC.,CIENC.E TEC.DO MARANHAO",
+            valorContratado: 92000000.00,
+            fornecedor: "08.368.875/0001-52 - FORTLINE INDUSTRIA E COMERCIO DE MOVEIS LTDA",
+            compra: { numero: "90006/2025", modalidade: "05 - Pregão", assinatura: "27/02/2026" },
+            objeto: "A presente Ata tem por objeto o registro de preços para a eventual contratação de registro de preço para eventual aquisição de mobiliário para ambientes administrativos e pedagógicos do IFMA Campus Maracanã e órgãos participantes."
+        };
 
-  <section class="kpis" id="kpis"></section>
+        const ITEMS_SUMMARY = [
+            { id: "00001", cod: "100934", tipo: "Material", desc: 'ESTAÇÃO TRABALHO, TIPO MULTIFUNCIONAL PENINSULAR EM "L"...', qtd: 164, valUnit: 16995.00 },
+            { id: "00002", cod: "322065", tipo: "Material", desc: "MESA REUNIÃO QUADRADA, MATERIAL MDP...", qtd: 60, valUnit: 6275.00 },
+            { id: "00003", cod: "148845", tipo: "Material", desc: "MESA REUNIÃO OVAL - SEMI OVAL, MATERIAL MADEIRA...", qtd: 224, valUnit: 4755.00 },
+            { id: "00004", cod: "167116", tipo: "Material", desc: "MESA REUNIÃO RETANGULAR, MATERIAL AGLOMERADO MADEIRA...", qtd: 251, valUnit: 3590.00 },
+            { id: "00005", cod: "326045", tipo: "Material", desc: "MESA REUNIÃO REDONDA, MATERIAL MADEIRA MDF...", qtd: 339, valUnit: 2100.00 },
+            { id: "00006", cod: "167129", tipo: "Material", desc: 'MESA ESCRITÓRIO LARGURA 1400 MM EM "L"...', qtd: 503, valUnit: 2616.00 },
+            { id: "00007", cod: "99358",  tipo: "Material", desc: "MESA ESCRITÓRIO LARGURA 140 M TEXTURIZADA...", qtd: 549, valUnit: 2850.00 },
+            { id: "00008", cod: "99318",  tipo: "Material", desc: "MESA ESCRITÓRIO LARGURA 0,60 M...", qtd: 760, valUnit: 1575.00 },
+            { id: "00009", cod: "179855", tipo: "Material", desc: "MESA AUXILIAR COMPRIMENTO 1.200 MM...", qtd: 1319, valUnit: 1810.00 },
+            { id: "00010", cod: "167129", tipo: "Material", desc: 'MESA ESCRITÓRIO LARGURA 1400 MM EM "L"...', qtd: 672, valUnit: 1840.00 },
+            { id: "00011", cod: "155053", tipo: "Material", desc: "MESA ESCRITÓRIO 2 GAVETAS LARGURA 1,50 M...", qtd: 587, valUnit: 2092.00 },
+            { id: "00012", cod: "155083", tipo: "Material", desc: "ARMÁRIO ESCRITÓRIO 2 PORTAS BAIXO...", qtd: 251, valUnit: 7800.00 },
+            { id: "00013", cod: "326070", tipo: "Material", desc: "ARMÁRIO ARQUIVO 4 GAVETAS...", qtd: 222, valUnit: 3131.00 },
+            { id: "00014", cod: "332898", tipo: "Material", desc: "ARMÁRIO ESCRITÓRIO 2 PORTAS 1 PRATELEIRA...", qtd: 672, valUnit: 1800.00 },
+            { id: "00015", cod: "158023", tipo: "Material", desc: "ARMÁRIO ESCRITÓRIO 2 PORTAS AGLOMERADO MDF...", qtd: 517, valUnit: 2900.00 },
+            { id: "00016", cod: "336069", tipo: "Material", desc: "ARMÁRIO ESCRITÓRIO SEMI-ABERTO 2 PORTAS...", qtd: 619, valUnit: 3775.00 },
+            { id: "00017", cod: "334858", tipo: "Material", desc: "ARMÁRIO ESCRITÓRIO 2 PORTAS 4 PRATELEIRAS...", qtd: 290, valUnit: 3175.00 },
+            { id: "00018", cod: "341954", tipo: "Material", desc: "ARMÁRIO ESCRITÓRIO ALTO 8 PORTAS...", qtd: 569, valUnit: 4300.00 },
+            { id: "00019", cod: "170743", tipo: "Material", desc: "GAVETEIRO FIXO 2 GAVETAS...", qtd: 668, valUnit: 625.00 },
+            { id: "00020", cod: "99007",  tipo: "Material", desc: "GAVETEIRO FIXO 3 GAVETAS...", qtd: 956, valUnit: 1651.00 },
+            { id: "00021", cod: "328720", tipo: "Material", desc: "GAVETEIRO MÓVEL 4 GAVETAS...", qtd: 518, valUnit: 2000.00 },
+            { id: "00022", cod: "100684", tipo: "Material", desc: "BALCÃO ATENDIMENTO 2 M LARGURA...", qtd: 125, valUnit: 3976.00 },
+            { id: "00023", cod: "100718", tipo: "Material", desc: 'BALCÃO ATENDIMENTO EM "L" LARGURA 1,60 M...', qtd: 116, valUnit: 7400.00 },
+            { id: "00024", cod: "334398", tipo: "Material", desc: "DIVISÓRIA MADEIRA LARGURA 500 MM...", qtd: 222, valUnit: 470.00 },
+            { id: "00025", cod: "334399", tipo: "Material", desc: "DIVISÓRIA MADEIRA LARGURA 700 MM...", qtd: 194, valUnit: 515.00 },
+            { id: "00026", cod: "324669", tipo: "Material", desc: "DIVISÓRIA PAINEL VIDRO CEGO...", qtd: 181, valUnit: 550.00 },
+            { id: "00027", cod: "326743", tipo: "Material", desc: "DIVISÓRIA MISTO COM VIDRO DUPLO...", qtd: 225, valUnit: 575.00 },
+            { id: "00028", cod: "178306", tipo: "Material", desc: "MESA REUNIÃO RETANGULAR 2 M...", qtd: 142, valUnit: 5725.00 },
+            { id: "00029", cod: "176501", tipo: "Material", desc: "MESA REUNIÃO RETANGULAR 1600 MM...", qtd: 155, valUnit: 6250.00 },
+            { id: "00030", cod: "100333", tipo: "Material", desc: "ARMÁRIO ESCRITÓRIO BAIXO PRETO...", qtd: 115, valUnit: 7050.00 },
+            { id: "00031", cod: "150966", tipo: "Material", desc: "POLTRONA GIRATÓRIA ESPALDAR ALTO...", qtd: 478, valUnit: 7971.00 },
+            { id: "00032", cod: "154379", tipo: "Material", desc: "POLTRONA GIRATÓRIA ESPALDAR ALTO TEXTURIZADA...", qtd: 363, valUnit: 5500.00 },
+            { id: "00033", cod: "148840", tipo: "Material", desc: "CADEIRA ESCRITÓRIO GIRATÓRIA TECIDO...", qtd: 803, valUnit: 5000.00 },
+            { id: "00034", cod: "174001", tipo: "Material", desc: "POLTRONA FIXA ESPALDAR BAIXO...", qtd: 423, valUnit: 3600.00 },
+            { id: "00035", cod: "167446", tipo: "Material", desc: "CADEIRA ESCRITÓRIO COURO SINTÉTICO...", qtd: 806, valUnit: 2500.00 },
+            { id: "00036", cod: "179099", tipo: "Material", desc: "CADEIRA FIXA VINIL COM BRAÇO...", qtd: 1372, valUnit: 2400.00 },
+            { id: "00037", cod: "98822",  tipo: "Material", desc: "CADEIRA ESCRITÓRIO TECIDO 100% POLIÉSTER...", qtd: 1653, valUnit: 2710.00 },
+            { id: "00038", cod: "148840", tipo: "Material", desc: "CADEIRA ESCRITÓRIO GIRATÓRIA PNEUMÁTICA...", qtd: 1727, valUnit: 3091.00 },
+            { id: "00039", cod: "98811",  tipo: "Material", desc: "CADEIRA ESCRITÓRIO GIRATÓRIA ESPALDAR MÉDIO...", qtd: 1422, valUnit: 1900.00 },
+            { id: "00040", cod: "100806", tipo: "Material", desc: "CADEIRA FIXA RECLINÁVEL...", qtd: 1035, valUnit: 2475.00 },
+            { id: "00041", cod: "325062", tipo: "Material", desc: "CADEIRA ESCOLAR COM PRANCHETA ESCAMOTEÁVEL...", qtd: 1678, valUnit: 3250.00 },
+            { id: "00042", cod: "98848",  tipo: "Material", desc: "CADEIRA SOBRE LONGARINA 5 ASSENTOS...", qtd: 457, valUnit: 7000.00 },
+            { id: "00043", cod: "98846",  tipo: "Material", desc: "CADEIRA SOBRE LONGARINA 3 ASSENTOS...", qtd: 944, valUnit: 4600.00 },
+            { id: "00044", cod: "155088", tipo: "Material", desc: "POLTRONA AUDITÓRIO DOBRÁVEL COM PRANCHETA EXTRA...", qtd: 1406, valUnit: 4775.00 },
+            { id: "00045", cod: "167174", tipo: "Material", desc: "POLTRONA AUDITÓRIO REBATÍVEL...", qtd: 125, valUnit: 6100.00 },
+            { id: "00046", cod: "155088", tipo: "Material", desc: "POLTRONA AUDITÓRIO DOBRÁVEL COM PRANCHETA EXTRA...", qtd: 886, valUnit: 4500.00 },
+            { id: "00047", cod: "326734", tipo: "Material", desc: "SOFÁ 1 LUGAR INDIVIDUAL COURO NATURAL...", qtd: 329, valUnit: 2500.00 },
+            { id: "00048", cod: "325938", tipo: "Material", desc: "SOFÁ 2 LUGARES TECIDO...", qtd: 434, valUnit: 4000.00 }
+        ];
 
-  <h2 class="section-title">Estatísticas descritivas</h2>
-  <section class="stat-groups" id="stat-groups"></section>
+        const DETAILED_ITEMS = {
+            "00001": {
+                descCompleta: 'ESTAÇÃO TRABALHO, TIPO MULTIFUNCIONAL, COMPONENTES 1 MESA SUPERFICIE INTEGRADA PENINSULAR EM "L", 18 0, CARACTERÍSTICAS ADICIONAIS SAÍDAS NA PARTE FRONTAL COM 750 MM DE PROFUNDIDAD E, REVESTIMENTO LAMINADO MELAMÍNICO, APLICAÇÃO COMPOSIÇAO AMBIENTE TRABALHO, ESTRUTURA MADEIRA AGLOMERADA/AÇO, ACABAMENTO ESTRUTURA PINTADO EM EPÓXI, MATERIAL PEFIL PVC',
+                adesoes: { max: 328, disponivel: 328, aguardando: 0, aceita: "Sim", solicitacoes: [] },
+                unidades: [
+                    { cod: "152801", nome: "IFAL/CAMPUS SANTANA", tipo: "Participante", registrada: 6, disponivel: 6 },
+                    { cod: "152802", nome: "IFAL/CAMPUS PIRANHA", tipo: "Participante", registrada: 4, disponivel: 4 },
+                    { cod: "152803", nome: "IFAL/CAMPUS MURICI", tipo: "Participante", registrada: 1, disponivel: 1 },
+                    { cod: "154618", nome: "IFBAIANO G. MANGABE", tipo: "Participante", registrada: 10, disponivel: 7 },
+                    { cod: "158276", nome: "IFMA/CAMPUS S.LUIS", tipo: "Gerenciadora", registrada: 5, disponivel: 5 },
+                    { cod: "373083", nome: "SR-INCRA-SEDE/DF", tipo: "Participante", registrada: 96, disponivel: 96 },
+                    { cod: "925172", nome: "PMPV/RO", tipo: "Participante", registrada: 8, disponivel: 8 }
+                ],
+                empenhos: [
+                    { num: "2026NE000198", unidade: "154618 - IFBAIANO G. MANGABE", data: "2026-05-06", qtdIncluida: 1, qtdEmpenhada: 1, valor: 16995.00 },
+                    { num: "2026NE000224", unidade: "154618 - IFBAIANO G. MANGABE", data: "2026-07-06", qtdIncluida: 1, qtdEmpenhada: 1, valor: 16995.00 },
+                    { num: "2026NE000229", unidade: "154618 - IFBAIANO G. MANGABE", data: "2026-07-10", qtdIncluida: 1, qtdEmpenhada: 1, valor: 16995.00 }
+                ],
+                contratos: [
+                    { num: "2026NE000198", unidade: "154618 - IFBAIANO G. MANGABE", qtd: 1 }
+                ]
+            },
+            "00002": {
+                descCompleta: 'MESA REUNIÃO QUADRADA, MATERIAL MDP, ACABAMENTO SUPERFICIAL LAMINADO MELAMÍNICO DE BAIXA PRESSÃO, COMPRIMENTO 1.200 MM, LARGURA 1.200 MM, ALTURA 850 MM',
+                adesoes: { max: 120, disponivel: 109, aguardando: 0, aceita: "Sim", solicitacoes: [{ und: "160528-BASE ADM CCOMGEX", data: "14/09/2026 09:04", qtd: 11 }] },
+                unidades: [
+                    { cod: "154618", nome: "IFBAIANO G. MANGABE", tipo: "Participante", registrada: 20, disponivel: 20 },
+                    { cod: "158276", nome: "IFMA/CAMPUS S.LUIS", tipo: "Gerenciadora", registrada: 20, disponivel: 20 },
+                    { cod: "158960", nome: "CAMPUS CAUCAIA", tipo: "Participante", registrada: 16, disponivel: 16 }
+                ],
+                empenhos: [],
+                contratos: []
+            },
+             "00003": {
+                descCompleta: 'MESA REUNIÃO OVAL - SEMI OVAL, MATERIAL MADEIRA, TIPO MADEIRA AGLOMERADO, TIPO REVESTIMENTO LAMINADO MELAMÍNICO, COMPRIMENTO 240 CM, LARGURA 120 CM, ALTURA 73 CM, COR ARGILA',
+                adesoes: { 
+                    max: 448, disponivel: 437, aguardando: 0, aceita: "Sim", 
+                    solicitacoes: [
+                        { und: "925799-SECRETARIA DE E", data: "01/04/2026 15:02", qtd: 4 },
+                        { und: "927025-SECRETARIA DE E", data: "01/06/2026 11:14", qtd: 6 },
+                        { und: "458023-ESP/CE", data: "15/09/2026 11:24", qtd: 1 }
+                    ] 
+                },
+                unidades: [
+                    { cod: "154618", nome: "IFBAIANO G. MANGABE", tipo: "Participante", registrada: 20, disponivel: 17 },
+                    { cod: "158276", nome: "IFMA/CAMPUS S.LUIS", tipo: "Gerenciadora", registrada: 20, disponivel: 20 },
+                    { cod: "158381", nome: "IFAL/CAMPUS MACEIO", tipo: "Participante", registrada: 10, disponivel: 10 },
+                    { cod: "925172", nome: "PMPV/RO", tipo: "Participante", registrada: 81, disponivel: 81 }
+                ],
+                empenhos: [
+                    { num: "2026NE000131", unidade: "158382 - IFAL/CAMPUS SATUBA", data: "2026-06-08", qtdIncluida: 6, qtdAnulada: 6, qtdEmpenhada: 0, valor: 0.00 },
+                    { num: "2026NE000224", unidade: "154618 - IFBAIANO G. MANGABE", data: "2026-07-06", qtdIncluida: 3, qtdEmpenhada: 3, valor: 14265.00 }
+                ],
+                contratos: []
+            }
+        };
 
-  <section class="charts">
-    <div class="card chart-card">
-      <h3>Itens com mais unidades participantes da IRP (top 15)</h3>
-      <canvas id="chart-top-items"></canvas>
-    </div>
-    <div class="card chart-card">
-      <h3>Unidades carona que mais aderiram (top 10)</h3>
-      <canvas id="chart-top-units"></canvas>
-    </div>
-    <div class="card chart-card">
-      <h3>% do limite de adesão consumido por item (top 15)</h3>
-      <canvas id="chart-consumo"></canvas>
-    </div>
-    <div class="card chart-card">
-      <h3>Distribuição dos itens por status de adesão</h3>
-      <canvas id="chart-status"></canvas>
-    </div>
-  </section>
+        const formatMoney = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+        const formatNumber = (val) => new Intl.NumberFormat('pt-BR').format(val);
 
-  <section class="card report">
-    <h2>Itens com pedidos de adesão</h2>
-    <p class="sub">Busque por item, código de catálogo ou descrição. Alterne entre itens com carona registrada e pedidos aguardando análise.</p>
+        const KPICard = ({ title, value, icon, bgClass }) => (
+            <div className={`p-6 rounded-xl shadow-sm flex items-center space-x-4 text-white ${bgClass}`}>
+                <div className="p-3 bg-white/20 rounded-lg">
+                    {icon}
+                </div>
+                <div>
+                    <p className="text-sm font-medium text-white/80">{title}</p>
+                    <h3 className="text-2xl font-bold">{value}</h3>
+                </div>
+            </div>
+        );
 
-    <div class="controls">
-      <input type="search" id="search" placeholder="Buscar por item, código ou descrição..." />
-      <div class="segmented" id="filter-segment">
-        <button data-filter="caronas" class="active">Caronas registradas</button>
-        <button data-filter="pendentes">Pedidos pendentes</button>
-        <button data-filter="todos">Todos os itens</button>
-      </div>
-      <button class="btn" id="btn-export-csv">Exportar CSV</button>
-      <button class="btn" id="btn-export-xls">Exportar Excel</button>
-    </div>
+        const ItemModal = ({ item, onClose }) => {
+            const [activeTab, setActiveTab] = React.useState('geral');
+            const details = DETAILED_ITEMS[item.id];
 
-    <div class="table-scroll">
-      <table id="report-table">
-        <thead>
-          <tr>
-            <th data-key="numero">Item</th>
-            <th data-key="codigo_catalogo">Código</th>
-            <th data-key="descricao">Descrição</th>
-            <th data-key="qtd_homologada">Qtd. homologada</th>
-            <th data-key="qtd_participantes">Nº participantes (IRP)</th>
-            <th data-key="qtd_maxima_adesao">Limite adesão</th>
-            <th data-key="qtd_adesao_autorizada">Adesões autorizadas</th>
-            <th data-key="qtd_aguardando_analise">Aguardando análise</th>
-            <th data-key="qtd_caronas">Caronas</th>
-          </tr>
-        </thead>
-        <tbody id="report-body"></tbody>
-      </table>
-    </div>
-    <div class="empty-state" id="empty-state" hidden>Nenhum item encontrado para os filtros atuais.</div>
-  </section>
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+                        {/* Header do Modal */}
+                        <div className="flex justify-between items-center px-6 py-4 border-b bg-gray-50 shrink-0">
+                            <div>
+                                <div className="flex items-center space-x-2">
+                                    <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">Item {item.id}</span>
+                                    <span className="text-gray-500 text-sm">Código: {item.cod}</span>
+                                </div>
+                                <h2 className="text-xl font-bold text-gray-800 mt-1 line-clamp-1">{item.desc}</h2>
+                            </div>
+                            <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-500">
+                                <XIcon />
+                            </button>
+                        </div>
 
-  <footer>
-    Gerado a partir do relatório Contratos.gov.br · dados processados localmente por <code>parse_ata.py</code>
-  </footer>
-</div>
+                        {/* Abas */}
+                        <div className="flex border-b px-6 bg-white overflow-x-auto scrollbar-hide shrink-0">
+                            {['geral', 'unidades', 'empenhos'].map(tab => (
+                                <button 
+                                    key={tab}
+                                    className={`py-3 px-4 font-medium text-sm border-b-2 whitespace-nowrap transition-colors ${activeTab === tab ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                                    onClick={() => setActiveTab(tab)}
+                                >
+                                    {tab === 'geral' ? 'Visão Geral & Adesões' : tab === 'unidades' ? 'Unidades Participantes' : 'Empenhos e Contratos'}
+                                </button>
+                            ))}
+                        </div>
 
-<script>
-let DATA = null;
-let sortState = { key: "qtd_participantes", dir: "desc" };
-let currentFilter = "caronas";
-let currentSearch = "";
+                        {/* Conteúdo da Aba */}
+                        <div className="p-6 overflow-y-auto flex-1 bg-gray-50/50">
+                            {activeTab === 'geral' && (
+                                <div className="space-y-6">
+                                    <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                                        <h4 className="font-semibold text-gray-700 mb-2">Descrição Completa</h4>
+                                        <p className="text-gray-600 text-sm leading-relaxed">
+                                            {details ? details.descCompleta : item.desc}
+                                        </p>
+                                    </div>
 
-const fmt = new Intl.NumberFormat("pt-BR");
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm text-center">
+                                            <p className="text-xs text-gray-500 uppercase font-semibold">Valor Unitário</p>
+                                            <p className="text-lg font-bold text-blue-600 mt-1">{formatMoney(item.valUnit)}</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm text-center">
+                                            <p className="text-xs text-gray-500 uppercase font-semibold">Qtd. Homologada</p>
+                                            <p className="text-lg font-bold text-gray-800 mt-1">{formatNumber(item.qtd)}</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm text-center">
+                                            <p className="text-xs text-gray-500 uppercase font-semibold">Valor Total</p>
+                                            <p className="text-lg font-bold text-green-600 mt-1">{formatMoney(item.qtd * item.valUnit)}</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm text-center">
+                                            <p className="text-xs text-gray-500 uppercase font-semibold">Aceita Adesão?</p>
+                                            <p className="text-lg font-bold text-gray-800 mt-1">{details?.adesoes?.aceita || 'Sim'}</p>
+                                        </div>
+                                    </div>
 
-async function loadData() {
-  const res = await fetch("data/data.json");
-  DATA = await res.json();
-  renderAtaInfo();
-  renderKpis();
-  renderStatGroups();
-  renderCharts();
-  renderTable();
-}
+                                    {details?.adesoes && (
+                                        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                                            <div className="bg-gray-50 px-4 py-3 border-b border-gray-100">
+                                                <h4 className="font-semibold text-gray-700">Solicitações de Adesão Aprovadas</h4>
+                                            </div>
+                                            {details.adesoes.solicitacoes.length > 0 ? (
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-sm text-left">
+                                                        <thead className="text-xs text-gray-500 bg-gray-50/50 uppercase">
+                                                            <tr><th className="px-4 py-3">Unidade</th><th className="px-4 py-3">Data Aprovação</th><th className="px-4 py-3 text-right">Qtd</th></tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-gray-100">
+                                                            {details.adesoes.solicitacoes.map((sol, i) => (
+                                                                <tr key={i} className="hover:bg-gray-50">
+                                                                    <td className="px-4 py-3 font-medium text-gray-700">{sol.und}</td>
+                                                                    <td className="px-4 py-3 text-gray-500">{sol.data}</td>
+                                                                    <td className="px-4 py-3 text-right font-semibold">{sol.qtd}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            ) : (
+                                                <div className="p-6 text-center text-gray-500">Nenhuma solicitação de adesão registrada.</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
-function mean(nums) {
-  return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
-}
-function median(nums) {
-  if (!nums.length) return 0;
-  const s = [...nums].sort((a, b) => a - b);
-  const mid = Math.floor(s.length / 2);
-  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
-}
+                            {activeTab === 'unidades' && (
+                                <div>
+                                    {details?.unidades ? (
+                                        <div className="bg-white border rounded-xl overflow-hidden shadow-sm overflow-x-auto">
+                                            <table className="w-full text-sm text-left">
+                                                <thead className="text-xs text-gray-500 bg-gray-50 uppercase">
+                                                    <tr>
+                                                        <th className="px-4 py-3">Código</th>
+                                                        <th className="px-4 py-3">Unidade / Órgão</th>
+                                                        <th className="px-4 py-3">Tipo</th>
+                                                        <th className="px-4 py-3 text-right">Qtd. Registrada</th>
+                                                        <th className="px-4 py-3 text-right">Disponível</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-100">
+                                                    {details.unidades.map((u, i) => (
+                                                        <tr key={i} className="hover:bg-gray-50">
+                                                            <td className="px-4 py-3 text-gray-500">{u.cod}</td>
+                                                            <td className="px-4 py-3 font-medium text-gray-800">{u.nome}</td>
+                                                            <td className="px-4 py-3">
+                                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${u.tipo === 'Gerenciadora' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                                    {u.tipo}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-right">{u.registrada}</td>
+                                                            <td className="px-4 py-3 text-right font-semibold text-green-600">{u.disponivel}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center py-12 text-gray-500 bg-white rounded-xl border border-dashed border-gray-300">
+                                            <BuildingIcon />
+                                            <p className="mt-4 font-medium text-gray-700">Dados não processados</p>
+                                            <p className="text-sm max-w-md text-center mt-2">O detalhamento de unidades para este item (Item {item.id}) requer integração com o banco de dados completo. (Demonstração ativa nos Itens 00001, 00002 e 00003).</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
-function renderStatGroups() {
-  const items = DATA.itens;
-  const round1 = (n) => Math.round(n * 10) / 10;
+                            {activeTab === 'empenhos' && (
+                                <div className="space-y-6">
+                                    {details?.empenhos ? (
+                                        <>
+                                            <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
+                                                <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+                                                    <h4 className="font-semibold text-gray-700">Relação de Empenhos</h4>
+                                                    <span className="text-xs font-medium bg-blue-100 text-blue-800 px-2 py-1 rounded-full">{details.empenhos.length} empenhos</span>
+                                                </div>
+                                                {details.empenhos.length > 0 ? (
+                                                    <div className="overflow-x-auto">
+                                                        <table className="w-full text-sm text-left">
+                                                            <thead className="text-xs text-gray-500 bg-gray-50/50 uppercase">
+                                                                <tr>
+                                                                    <th className="px-4 py-3">Número NE</th>
+                                                                    <th className="px-4 py-3">Unidade Emissora</th>
+                                                                    <th className="px-4 py-3">Data</th>
+                                                                    <th className="px-4 py-3 text-right">Qtd</th>
+                                                                    <th className="px-4 py-3 text-right">Valor Empenhado</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-gray-100">
+                                                                {details.empenhos.map((emp, i) => (
+                                                                    <tr key={i} className="hover:bg-gray-50">
+                                                                        <td className="px-4 py-3 font-medium text-blue-600">{emp.num}</td>
+                                                                        <td className="px-4 py-3 text-gray-700 text-xs truncate max-w-xs">{emp.unidade}</td>
+                                                                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{emp.data}</td>
+                                                                        <td className="px-4 py-3 text-right">{emp.qtdEmpenhada}</td>
+                                                                        <td className="px-4 py-3 text-right font-semibold">{formatMoney(emp.valor)}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                ) : (
+                                                    <div className="p-6 text-center text-gray-500">Nenhum empenho registrado para este item.</div>
+                                                )}
+                                            </div>
+                                            
+                                            {details.contratos && details.contratos.length > 0 && (
+                                                <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
+                                                     <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+                                                        <h4 className="font-semibold text-gray-700">Contratos Vinculados</h4>
+                                                    </div>
+                                                    <div className="overflow-x-auto">
+                                                        <table className="w-full text-sm text-left">
+                                                            <thead className="text-xs text-gray-500 bg-gray-50/50 uppercase">
+                                                                <tr>
+                                                                    <th className="px-4 py-3">Número Contrato/NE</th>
+                                                                    <th className="px-4 py-3">Unidade</th>
+                                                                    <th className="px-4 py-3 text-right">Qtd. Contratada</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-gray-100">
+                                                                {details.contratos.map((con, i) => (
+                                                                    <tr key={i} className="hover:bg-gray-50">
+                                                                        <td className="px-4 py-3 font-medium text-indigo-600">{con.num}</td>
+                                                                        <td className="px-4 py-3 text-gray-700 text-xs">{con.unidade}</td>
+                                                                        <td className="px-4 py-3 text-right font-semibold">{con.qtd}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center py-12 text-gray-500 bg-white rounded-xl border border-dashed border-gray-300">
+                                            <FileTextIcon />
+                                            <p className="mt-4 font-medium text-gray-700">Dados não processados</p>
+                                            <p className="text-sm max-w-md text-center mt-2">Os empenhos e contratos detalhados requerem a carga completa do documento. (Demonstração nos Itens 00001, 00002 e 00003).</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
 
-  const participantesArr = items.map(it => it.qtd_participantes);
-  const caronasArr = items.map(it => it.qtd_caronas);
-  const consumoArr = items
-    .filter(it => it.qtd_maxima_adesao > 0)
-    .map(it => (it.qtd_adesao_autorizada / it.qtd_maxima_adesao) * 100);
+        const App = () => {
+            const [searchQuery, setSearchQuery] = React.useState('');
+            const [selectedItem, setSelectedItem] = React.useState(null);
 
-  const groups = [
-    {
-      title: "Unidades participantes (IRP) por item",
-      values: [
-        ["Média", round1(mean(participantesArr))],
-        ["Mediana", median(participantesArr)],
-        ["Mínimo", Math.min(...participantesArr)],
-        ["Máximo", Math.max(...participantesArr)],
-      ],
-    },
-    {
-      title: "Unidades carona por item",
-      values: [
-        ["Média", round1(mean(caronasArr))],
-        ["Mediana", median(caronasArr)],
-        ["Mínimo", Math.min(...caronasArr)],
-        ["Máximo", Math.max(...caronasArr)],
-      ],
-    },
-    {
-      title: "% do limite de adesão consumido",
-      values: [
-        ["Média", `${round1(mean(consumoArr))}%`],
-        ["Mediana", `${round1(median(consumoArr))}%`],
-        ["Mínimo", `${round1(Math.min(...consumoArr))}%`],
-        ["Máximo", `${round1(Math.max(...consumoArr))}%`],
-      ],
-    },
-  ];
+            // Filtragem da tabela baseada em busca
+            const filteredItems = ITEMS_SUMMARY.filter(item => 
+                item.desc.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                item.cod.includes(searchQuery) ||
+                item.id.includes(searchQuery)
+            );
 
-  document.getElementById("stat-groups").innerHTML = groups.map(g => `
-    <div class="card stat-group">
-      <h4>${g.title}</h4>
-      <div class="stat-row">
-        ${g.values.map(([k, v]) => `
-          <div class="stat-cell">
-            <div class="v">${v}</div>
-            <div class="k">${k}</div>
-          </div>
-        `).join("")}
-      </div>
-    </div>
-  `).join("");
-}
+            return (
+                <div className="min-h-screen flex flex-col md:flex-row">
+                    {/* Sidebar Clássica */}
+                    <div className="w-full md:w-64 bg-gray-900 text-white flex-col hidden md:flex shrink-0">
+                        <div className="p-6 border-b border-gray-800">
+                            <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                                <BuildingIcon />
+                                PNCP View
+                            </h1>
+                            <p className="text-xs text-gray-400 mt-2 font-medium tracking-wide uppercase">Governo Federal</p>
+                        </div>
+                        <nav className="flex-1 px-4 py-6 space-y-2">
+                            <a href="#" className="flex items-center space-x-3 px-4 py-3 bg-blue-600/20 text-blue-400 rounded-lg font-medium transition-colors">
+                                <FileTextIcon />
+                                <span>Ata de Registro</span>
+                            </a>
+                        </nav>
+                        <div className="p-6 border-t border-gray-800 text-xs text-gray-500">
+                            Relatório gerado em 18/09/2026<br/>UG: 158276
+                        </div>
+                    </div>
 
-function renderAtaInfo() {
-  const a = DATA.ata || {};
-  const fields = [
-    ["Ata nº", a.ata_numero],
-    ["Órgão", a.orgao],
-    ["Unidade gerenciadora", a.unidade_gerenciadora],
-    ["Fornecedor", a.fornecedor_principal],
-    ["Vigência", a.vigencia_inicial && a.vigencia_final ? `${a.vigencia_inicial} a ${a.vigencia_final}` : null],
-    ["Valor contratado", a.valor_contratado],
-  ];
-  const el = document.getElementById("ata-info");
-  el.innerHTML = fields
-    .filter(([, v]) => v)
-    .map(([label, value]) => `
-      <div>
-        <div class="label">${label}</div>
-        <div class="value small">${escapeHtml(String(value))}</div>
-      </div>
-    `).join("");
-}
+                    {/* Conteúdo Principal */}
+                    <div className="flex-1 flex flex-col overflow-hidden h-screen">
+                        {/* Header Minimalista */}
+                        <header className="bg-white border-b border-gray-200 py-4 px-6 md:px-8 flex justify-between items-center shrink-0">
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-800">Ata SRP nº {ATA_GLOBAL_INFO.numero}</h2>
+                                <p className="text-sm text-gray-500 mt-1">{ATA_GLOBAL_INFO.ug}</p>
+                            </div>
+                            <div className="hidden lg:block text-right">
+                                <p className="text-sm font-semibold text-gray-800">Atualizado: {ATA_GLOBAL_INFO.atualizacao}</p>
+                                <a href={ATA_GLOBAL_INFO.link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">Ver no PNCP ↗</a>
+                            </div>
+                        </header>
 
-function renderKpis() {
-  const r = DATA.resumo;
-  const kpis = [
-    [r.total_itens, "Itens na ata"],
-    [r.itens_com_carona_registrada, "Itens com carona registrada"],
-    [r.itens_com_pedido_pendente, "Itens com pedido pendente"],
-    [r.total_caronas, "Total de unidades carona"],
-    [r.total_adesoes_autorizadas, "Total de adesões autorizadas"],
-    [`${Math.round((r.itens_aceita_adesao / r.total_itens) * 100)}%`, "Itens que aceitam adesão"],
-  ];
-  document.getElementById("kpis").innerHTML = kpis.map(([num, lbl]) => `
-    <div class="card kpi">
-      <div class="num">${typeof num === "number" ? fmt.format(num) : num}</div>
-      <div class="lbl">${lbl}</div>
-    </div>
-  `).join("");
-}
+                        {/* Corpo Roleável */}
+                        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+                            
+                            {/* Resumo do Objeto e Fornecedor */}
+                            <div className="mb-6 md:mb-8 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-6">
+                                <div className="flex-1">
+                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Objeto da Ata</h3>
+                                    <p className="text-gray-700 leading-relaxed text-sm">{ATA_GLOBAL_INFO.objeto}</p>
+                                </div>
+                                <div className="flex-1 md:border-l md:pl-6 border-gray-100">
+                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Fornecedor Vencedor</h3>
+                                    <p className="text-gray-800 font-semibold">{ATA_GLOBAL_INFO.fornecedor.split(" - ")[1]}</p>
+                                    <p className="text-gray-500 text-sm mt-1">CNPJ: {ATA_GLOBAL_INFO.fornecedor.split(" - ")[0]}</p>
+                                    
+                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mt-4 mb-1">Vigência</h3>
+                                    <p className="text-gray-800 font-medium">{ATA_GLOBAL_INFO.vigencia}</p>
+                                </div>
+                            </div>
 
-function renderCharts() {
-  const items = DATA.itens;
+                            {/* KPIs */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                <KPICard 
+                                    title="Valor Total Contratado" 
+                                    value={formatMoney(ATA_GLOBAL_INFO.valorContratado)} 
+                                    icon={<BadgeDollarIcon />} 
+                                    bgClass="bg-gradient-to-br from-green-500 to-emerald-700" 
+                                />
+                                <KPICard 
+                                    title="Itens Homologados" 
+                                    value={ITEMS_SUMMARY.length} 
+                                    icon={<FileTextIcon />} 
+                                    bgClass="bg-gradient-to-br from-blue-500 to-indigo-700" 
+                                />
+                                <KPICard 
+                                    title="Órgão Gerenciador" 
+                                    value="IFMA" 
+                                    icon={<BuildingIcon />} 
+                                    bgClass="bg-gradient-to-br from-purple-500 to-fuchsia-700" 
+                                />
+                            </div>
 
-  const topItems = [...items]
-    .sort((a, b) => b.qtd_participantes - a.qtd_participantes)
-    .slice(0, 15);
+                            {/* Tabela de Itens */}
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+                                <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <h3 className="text-lg font-bold text-gray-800">Itens da Ata ({filteredItems.length})</h3>
+                                    
+                                    <div className="relative w-full md:w-auto">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                            <SearchIcon />
+                                        </div>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Buscar item, código..." 
+                                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full md:w-80 transition-shadow"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
 
-  new Chart(document.getElementById("chart-top-items"), {
-    type: "bar",
-    data: {
-      labels: topItems.map(it => `Item ${it.numero}`),
-      datasets: [{
-        label: "Nº de unidades participantes",
-        data: topItems.map(it => it.qtd_participantes),
-        backgroundColor: "#2f6feb",
-        borderRadius: 4,
-      }],
-    },
-    options: {
-      indexAxis: "y",
-      plugins: { legend: { display: false } },
-      scales: { x: { beginAtZero: true } },
-      maintainAspectRatio: false,
-    },
-  });
+                                <div className="overflow-x-auto w-full">
+                                    <table className="w-full text-sm text-left text-gray-600 min-w-[800px]">
+                                        <thead className="text-xs text-gray-500 uppercase bg-gray-50/80 border-b border-gray-100">
+                                            <tr>
+                                                <th className="px-6 py-4 font-semibold">Item</th>
+                                                <th className="px-6 py-4 font-semibold">Código</th>
+                                                <th className="px-6 py-4 font-semibold w-2/5">Descrição Resumida</th>
+                                                <th className="px-6 py-4 font-semibold text-right">Qtd</th>
+                                                <th className="px-6 py-4 font-semibold text-right">Valor Unit.</th>
+                                                <th className="px-6 py-4 font-semibold text-right">Total Previsto</th>
+                                                <th className="px-6 py-4 font-semibold text-center">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100">
+                                            {filteredItems.map(item => (
+                                                <tr key={item.id} className="hover:bg-blue-50/50 transition-colors group">
+                                                    <td className="px-6 py-4 font-semibold text-gray-900">{item.id}</td>
+                                                    <td className="px-6 py-4 text-gray-500">{item.cod}</td>
+                                                    <td className="px-6 py-4 font-medium text-gray-700 truncate max-w-[200px] md:max-w-xs" title={item.desc}>{item.desc}</td>
+                                                    <td className="px-6 py-4 text-right font-medium">{formatNumber(item.qtd)}</td>
+                                                    <td className="px-6 py-4 text-right text-gray-500">{formatMoney(item.valUnit)}</td>
+                                                    <td className="px-6 py-4 text-right font-semibold text-gray-800">{formatMoney(item.qtd * item.valUnit)}</td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <button 
+                                                            onClick={() => setSelectedItem(item)}
+                                                            className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors font-medium text-xs whitespace-nowrap"
+                                                        >
+                                                            <EyeIcon /> <span>Detalhes</span>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {filteredItems.length === 0 && (
+                                                <tr>
+                                                    <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                                                        Nenhum item encontrado com a busca "{searchQuery}"
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </main>
+                    </div>
 
-  const unitCounts = new Map();
-  for (const it of items) {
-    for (const c of it.caronas) {
-      unitCounts.set(c.nome, (unitCounts.get(c.nome) || 0) + 1);
-    }
-  }
-  const topUnits = [...unitCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+                    {/* Modal Viewer */}
+                    {selectedItem && (
+                        <ItemModal 
+                            item={selectedItem} 
+                            onClose={() => setSelectedItem(null)} 
+                        />
+                    )}
+                </div>
+            );
+        };
 
-  new Chart(document.getElementById("chart-top-units"), {
-    type: "bar",
-    data: {
-      labels: topUnits.map(([name]) => name),
-      datasets: [{
-        label: "Itens aderidos",
-        data: topUnits.map(([, count]) => count),
-        backgroundColor: "#1a7f37",
-        borderRadius: 4,
-      }],
-    },
-    options: {
-      indexAxis: "y",
-      plugins: { legend: { display: false } },
-      scales: { x: { beginAtZero: true } },
-      maintainAspectRatio: false,
-    },
-  });
-
-  const topConsumo = items
-    .filter(it => it.qtd_maxima_adesao > 0)
-    .map(it => ({ numero: it.numero, pct: (it.qtd_adesao_autorizada / it.qtd_maxima_adesao) * 100 }))
-    .sort((a, b) => b.pct - a.pct)
-    .slice(0, 15);
-
-  new Chart(document.getElementById("chart-consumo"), {
-    type: "bar",
-    data: {
-      labels: topConsumo.map(it => `Item ${it.numero}`),
-      datasets: [{
-        label: "% do limite consumido",
-        data: topConsumo.map(it => Math.round(it.pct * 10) / 10),
-        backgroundColor: "#9a6700",
-        borderRadius: 4,
-      }],
-    },
-    options: {
-      indexAxis: "y",
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.x}%` } },
-      },
-      scales: { x: { beginAtZero: true, ticks: { callback: (v) => `${v}%` } } },
-      maintainAspectRatio: false,
-    },
-  });
-
-  const comCarona = items.filter(it => it.tem_carona_registrada).length;
-  const pendenteSemCarona = items.filter(it => it.tem_pedido_pendente && !it.tem_carona_registrada).length;
-  const semAdesao = items.length - comCarona - pendenteSemCarona;
-
-  new Chart(document.getElementById("chart-status"), {
-    type: "doughnut",
-    data: {
-      labels: ["Com carona registrada", "Pendente de análise", "Sem adesão"],
-      datasets: [{
-        data: [comCarona, pendenteSemCarona, semAdesao],
-        backgroundColor: ["#1a7f37", "#9a6700", "#8a94a3"],
-      }],
-    },
-    options: {
-      plugins: { legend: { position: "bottom", labels: { boxWidth: 12 } } },
-      maintainAspectRatio: false,
-    },
-  });
-}
-
-function matchesFilter(item) {
-  if (currentFilter === "caronas") return item.tem_carona_registrada;
-  if (currentFilter === "pendentes") return item.tem_pedido_pendente;
-  return true;
-}
-
-function normalize(s) {
-  return String(s || "")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase();
-}
-
-function matchesSearch(item) {
-  if (!currentSearch) return true;
-  const q = normalize(currentSearch);
-  return (
-    normalize(item.numero).includes(q) ||
-    normalize(item.codigo_catalogo).includes(q) ||
-    normalize(item.descricao).includes(q)
-  );
-}
-
-function getFilteredSorted() {
-  let rows = DATA.itens.filter(it => matchesFilter(it) && matchesSearch(it));
-  const { key, dir } = sortState;
-  rows = [...rows].sort((a, b) => {
-    let va = a[key], vb = b[key];
-    if (typeof va === "string") va = va.toLowerCase();
-    if (typeof vb === "string") vb = vb.toLowerCase();
-    if (va == null) va = "";
-    if (vb == null) vb = "";
-    if (va < vb) return dir === "asc" ? -1 : 1;
-    if (va > vb) return dir === "asc" ? 1 : -1;
-    return 0;
-  });
-  return rows;
-}
-
-function renderTable() {
-  const rows = getFilteredSorted();
-  const body = document.getElementById("report-body");
-  const empty = document.getElementById("empty-state");
-
-  if (rows.length === 0) {
-    body.innerHTML = "";
-    empty.hidden = false;
-    return;
-  }
-  empty.hidden = true;
-
-  body.innerHTML = rows.map(it => {
-    const aguardando = it.qtd_aguardando_analise > 0
-      ? `<span class="badge warn">${fmt.format(it.qtd_aguardando_analise)}</span>`
-      : fmt.format(it.qtd_aguardando_analise || 0);
-
-    const participantsId = `part-${it.numero}`;
-    const participantsList = it.participantes.length
-      ? `<button class="participants-toggle" onclick="document.getElementById('${participantsId}').hidden = !document.getElementById('${participantsId}').hidden">ver unidades</button>
-         <ul class="participants-list" id="${participantsId}" hidden>
-           ${it.participantes.map(p => `<li>${escapeHtml(p.nome)} (${p.codigo})</li>`).join("")}
-         </ul>`
-      : "";
-
-    const caronasId = `caronas-${it.numero}`;
-    const caronasList = it.caronas.length
-      ? `<button class="participants-toggle" onclick="document.getElementById('${caronasId}').hidden = !document.getElementById('${caronasId}').hidden">ver unidades</button>
-         <ul class="participants-list" id="${caronasId}" hidden>
-           ${it.caronas.map(c => `<li>${escapeHtml(c.nome)} (${c.codigo})</li>`).join("")}
-         </ul>`
-      : "";
-
-    return `
-      <tr>
-        <td>${escapeHtml(it.numero)}</td>
-        <td>${escapeHtml(it.codigo_catalogo || "—")}</td>
-        <td class="desc">${escapeHtml(truncate(it.descricao, 140))}</td>
-        <td>${fmt.format(it.qtd_homologada || 0)}</td>
-        <td>${fmt.format(it.qtd_participantes)} ${participantsList}</td>
-        <td>${fmt.format(it.qtd_maxima_adesao || 0)}</td>
-        <td>${fmt.format(it.qtd_adesao_autorizada || 0)}</td>
-        <td>${aguardando}</td>
-        <td>${fmt.format(it.qtd_caronas)} ${caronasList}</td>
-      </tr>
-    `;
-  }).join("");
-}
-
-function truncate(s, n) {
-  if (!s) return "";
-  return s.length > n ? s.slice(0, n - 1) + "…" : s;
-}
-
-function escapeHtml(s) {
-  return String(s)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
-
-function toCsvValue(v) {
-  const s = String(v ?? "");
-  if (/[",\n;]/.test(s)) return `"${s.replaceAll('"', '""')}"`;
-  return s;
-}
-
-function exportCsv() {
-  const rows = getFilteredSorted();
-  const headers = ["numero", "codigo_catalogo", "descricao", "qtd_homologada", "qtd_participantes", "qtd_maxima_adesao", "qtd_adesao_autorizada", "qtd_aguardando_analise", "qtd_caronas"];
-  const lines = [headers.join(";")];
-  for (const it of rows) {
-    lines.push(headers.map(h => toCsvValue(it[h])).join(";"));
-  }
-  downloadBlob(lines.join("\n"), "text/csv;charset=utf-8", "itens_adesao.csv");
-}
-
-function exportXls() {
-  // planilha HTML simples que o Excel abre nativamente (sem dependências externas)
-  const rows = getFilteredSorted();
-  const headers = ["Item", "Código", "Descrição", "Qtd. homologada", "Nº participantes (IRP)", "Limite adesão", "Adesões autorizadas", "Aguardando análise", "Caronas"];
-  const keys = ["numero", "codigo_catalogo", "descricao", "qtd_homologada", "qtd_participantes", "qtd_maxima_adesao", "qtd_adesao_autorizada", "qtd_aguardando_analise", "qtd_caronas"];
-  let html = `<table><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr>`;
-  for (const it of rows) {
-    html += `<tr>${keys.map(k => `<td>${escapeHtml(it[k] ?? "")}</td>`).join("")}</tr>`;
-  }
-  html += "</table>";
-  downloadBlob(html, "application/vnd.ms-excel", "itens_adesao.xls");
-}
-
-function downloadBlob(content, mime, filename) {
-  const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-document.getElementById("search").addEventListener("input", (e) => {
-  currentSearch = e.target.value.trim();
-  renderTable();
-});
-
-document.getElementById("filter-segment").addEventListener("click", (e) => {
-  const btn = e.target.closest("button[data-filter]");
-  if (!btn) return;
-  currentFilter = btn.dataset.filter;
-  document.querySelectorAll("#filter-segment button").forEach(b => b.classList.toggle("active", b === btn));
-  renderTable();
-});
-
-document.querySelectorAll("#report-table thead th[data-key]").forEach(th => {
-  th.addEventListener("click", () => {
-    const key = th.dataset.key;
-    if (sortState.key === key) {
-      sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
-    } else {
-      sortState = { key, dir: "desc" };
-    }
-    renderTable();
-  });
-});
-
-document.getElementById("btn-export-csv").addEventListener("click", exportCsv);
-document.getElementById("btn-export-xls").addEventListener("click", exportXls);
-
-loadData().catch(err => {
-  document.querySelector(".wrap").innerHTML = `<p style="color:#c0392b">Erro ao carregar data/data.json: ${err.message}. Rode "python3 parse_ata.py &lt;arquivo&gt;" primeiro, e sirva a pasta com um servidor HTTP (fetch não funciona em file://).</p>`;
-});
-</script>
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
